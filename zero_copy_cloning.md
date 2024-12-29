@@ -33,15 +33,60 @@ CREATE DATABASE cloned_database_name CLONE source_database_name;
 
 ---
 
-## **How It Works**
-1. **Metadata Operation**: When you create a clone, Snowflake only replicates the metadata (e.g., schema, table structure, and pointers to data).
-2. **Copy-on-Write**: 
-   - The clone and original share the same data storage initially.
-   - If either the source or the clone is modified, only the modified parts are stored as new data.
+## **Cloning from Time Travel**
+
+Snowflake allows cloning from a **previous point in time** using its Time Travel feature. This is useful for recovering historical data or creating backups from a specific state.
+
+### **Syntax for Cloning with Time Travel**
+```sql
+CREATE TABLE cloned_table_name CLONE source_table_name AT (TIMESTAMP => 'YYYY-MM-DD HH24:MI:SS');
+```
+
+#### **Examples**
+1. **Clone a Table from a Specific Timestamp**
+   ```sql
+   CREATE TABLE sales_clone CLONE sales AT (TIMESTAMP => '2024-12-01 10:00:00');
+   ```
+
+2. **Clone a Table from a Query ID**
+   ```sql
+   CREATE TABLE sales_clone CLONE sales AT (QUERY_ID => '01a2b3c4-d5e6-789f-0g1h-23456789ijkl');
+   ```
+
+3. **Clone a Database from a Time Travel Snapshot**
+   ```sql
+   CREATE DATABASE backup_database CLONE prod_database AT (TIMESTAMP => '2024-12-01 10:00:00');
+   ```
+
+---
+
+## **Swapping Tables**
+
+Swapping tables is a powerful feature that allows you to replace the contents of one table with another without renaming or reloading data. This is particularly useful for staging and production workflows.
+
+### **Syntax for Swapping Tables**
+```sql
+ALTER TABLE table_name1 SWAP WITH table_name2;
+```
+
+### **Key Characteristics**
+- **Instant Operation**: No physical data movement occurs; only metadata is updated.
+- **Preserves Permissions**: The target table retains its original permissions and structure.
+- **Efficient for Deployment**: Use it to atomically replace staging data with production data.
+
+#### **Example: Swap Staging and Production Tables**
+```sql
+-- After verifying the staging table is ready for production
+ALTER TABLE production_table SWAP WITH staging_table;
+```
+
+- **Result**: `production_table` now contains the data from `staging_table`, and `staging_table` contains the old production data.
 
 ---
 
 ## **Use Cases**
+
+### Zero-Copy Cloning
 1. **Data Backup and Versioning**  
    - Create a snapshot of a table or database before running ETL processes.  
    ```sql
@@ -57,30 +102,11 @@ CREATE DATABASE cloned_database_name CLONE source_database_name;
 3. **Disaster Recovery**  
    - Quickly clone data as part of a recovery strategy or to investigate data anomalies.
 
-4. **Data Sharing Across Teams**  
-   - Provide a team with a clone of a schema or database for independent analysis.
-
----
-
-## **Example Scenarios**
-
-### Clone a Table
-```sql
--- Clone the sales table into a new table for testing
-CREATE TABLE sales_clone CLONE sales;
-```
-
-### Clone a Database for Development
-```sql
--- Clone the production database for development purposes
-CREATE DATABASE dev_database CLONE prod_database;
-```
-
-### Clone a Schema Before ETL Updates
-```sql
--- Clone the schema to preserve data before making updates
-CREATE SCHEMA backup_schema CLONE analytics_schema;
-```
+4. **Historical Snapshots with Time Travel**  
+   - Clone data from a specific point in time to restore or analyze past states.  
+   ```sql
+   CREATE TABLE sales_snapshot CLONE sales AT (TIMESTAMP => '2024-12-01 10:00:00');
+   ```
 
 ---
 
@@ -92,44 +118,29 @@ CREATE SCHEMA backup_schema CLONE analytics_schema;
 | **Cost Efficiency**     | No additional storage costs unless modifications are made.                 |
 | **Flexibility**         | Enables independent modification and testing without affecting the source. |
 | **Point-in-Time Snapshot** | Useful for creating backups and snapshots for auditing or testing.      |
+| **Efficient Deployment** | Swapping tables makes transitioning from staging to production seamless. |
 
 ---
 
 ## **Important Considerations**
-1. **Read-Only History**: Clones only include the current state of the source object at the time of cloning. Time Travel can be used for historical snapshots.
+1. **Read-Only History**: Clones only include the current state of the source object at the time of cloning. Time Travel allows for historical cloning.
 2. **Copy-on-Write Costs**: Any changes made to the clone or source will incur additional storage costs for the modified data.
-3. **Permissions**: The clone inherits permissions from the source but becomes independent after creation.
+3. **Permissions**: Clones inherit permissions from the source but become independent after creation.
 4. **Object Dependencies**: Cloning a schema or database does not automatically clone external dependencies (e.g., external stages or file formats).
-
----
-
-## **Limitations**
-- Cloning **does not include data retention settings** (like Time Travel history beyond the current state).
-- External integrations (e.g., Snowpipe, external stages) are not cloned.
-- Cloning does not transfer object ownership. Ownership of the clone must be managed separately.
-
----
-
-## **Advanced Example: Clone with Modifications**
-```sql
--- Clone a production table and add a new column for testing
-CREATE TABLE sales_clone CLONE sales;
-
--- Add a new column in the clone
-ALTER TABLE sales_clone ADD COLUMN test_column STRING;
-```
+5. **Table Swapping**: Use swapping cautiously in production workflows to avoid accidental data overwrite.
 
 ---
 
 ## **Best Practices**
 - **Use Cloning for Snapshots**: Leverage zero-copy cloning for quick backups before data transformations.
-- **Avoid Over-Cloning**: Excessive clones can lead to higher storage costs if many clones are modified significantly.
-- **Combine with Time Travel**: Use Time Travel with cloning to create snapshots from a specific point in time.
-- **Monitor Storage Usage**: Keep an eye on storage costs if clones are frequently modified.
+- **Combine Cloning with Time Travel**: Restore data from specific points in time for auditing or recovery purposes.
+- **Swap for Seamless Transitions**: Use table swapping for efficient staging-to-production transitions.
+- **Monitor Storage Usage**: Be mindful of storage costs if clones or swapped tables are frequently modified.
 
 ---
 
 ### **Summary**
-Zero-copy cloning is a game-changing feature in Snowflake that allows data engineers to create instant, cost-effective snapshots of tables, schemas, or databases. By understanding its capabilities and limitations, you can streamline development workflows, optimize storage costs, and enhance disaster recovery strategies.
+
+Zero-copy cloning and table swapping are game-changing features in Snowflake. Cloning allows for fast, cost-effective backups, testing, and disaster recovery, while swapping enables seamless transitions between staging and production environments. Combined with Time Travel, these features empower data engineers to maintain robust and efficient workflows with minimal overhead.
 
 --- 
