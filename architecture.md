@@ -6,6 +6,26 @@ Snowflake is a **cloud-native data platform** that offers **elastic scalability,
 
 ## **1. Snowflake Architecture**
 
+### **Architecture Diagram**
+```bash
++--------------------------+
+|   Cloud Services Layer   | <-- Authentication, Metadata Management, Query Optimization
++--------------------------+
+             |
++--------------------------+
+| Virtual Warehouses Layer | <-- Independent Compute Resources for Query Execution
+|  (Compute Layer)         |
++--------------------------+
+             |
++--------------------------+
+|     Storage Layer        | <-- Centralized Storage for Structured & Semi-Structured Data
++--------------------------+
+             |
+     Cloud Provider (AWS, Azure, GCP)
+```
+
+---
+
 ### **Key Components**
 
 1. **Cloud Services Layer**
