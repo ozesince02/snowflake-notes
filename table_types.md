@@ -1,113 +1,162 @@
-### **Types of Tables in Snowflake**
-
 # **Types of Tables in Snowflake**
 
-Snowflake provides different types of tables to cater to diverse use cases, including permanent, temporary, transient, and external tables.
+Snowflake provides multiple types of tables tailored for various use cases. Each table type comes with distinct characteristics and advantages, enabling developers to choose the best option based on performance, storage, and business needs.
 
 ---
 
 ## **1. Permanent Tables**
 
-### Description
+### **Description**
 - Default table type in Snowflake.
-- Fully durable and persistent.
-- Data is retained unless explicitly deleted.
+- Designed for storing persistent data.
+- Data remains available unless explicitly dropped.
 
-### Use Cases
-- Production datasets.
-- Long-term storage of critical data.
+### **Features**
+- Fully supports **Time Travel** and **Fail-Safe**.
+- Data is automatically backed up by Snowflake.
 
-### Example
+### **Use Cases**
+- Core transactional or historical data storage.
+- Persistent records that require long-term retention.
+
+### **Example**
 ```sql
 CREATE TABLE permanent_table (
     id INT,
-    name STRING
+    name STRING,
+    created_at TIMESTAMP
 );
 ```
 
 ---
 
-## **2. Transient Tables**
+## **2. Temporary Tables**
 
-### Description
-- Do not support Fail-Safe.
-- Retain data during Time Travel but are removed after Time Travel expires.
+### **Description**
+- Exists only for the duration of a session.
+- Automatically dropped at the end of the session.
 
-### Use Cases
-- Intermediate ETL staging tables.
-- Temporary storage where durability is less critical.
+### **Features**
+- Does not support **Time Travel** or **Fail-Safe**.
+- Ideal for intermediate computations.
 
-### Example
-```sql
-CREATE TRANSIENT TABLE transient_table (
-    id INT,
-    name STRING
-);
-```
+### **Use Cases**
+- Storing intermediate results during ETL processes.
+- Data not needed beyond session duration.
 
----
-
-## **3. Temporary Tables**
-
-### Description
-- Exist only for the duration of a session.
-- Automatically dropped when the session ends.
-- Not visible outside the session.
-
-### Use Cases
-- Temporary data transformations.
-- Staging data within a session.
-
-### Example
+### **Example**
 ```sql
 CREATE TEMPORARY TABLE temp_table (
     id INT,
-    name STRING
+    value STRING
 );
 ```
 
 ---
 
-## **4. External Tables**
+## **3. Transient Tables**
 
-### Description
-- Reference data stored outside Snowflake (e.g., Amazon S3).
-- Used for querying data in external storage without loading it into Snowflake.
+### **Description**
+- Similar to permanent tables but without **Fail-Safe**.
+- Offers cost savings by excluding the additional storage overhead for Fail-Safe.
 
-### Use Cases
-- Querying large datasets in a data lake.
-- Integrating with external storage.
+### **Features**
+- Supports **Time Travel** but for a limited duration.
+- Lower cost for temporary or less critical data.
 
-### Example
+### **Use Cases**
+- Storing staging data for ETL.
+- Temporary analytical data.
+
+### **Example**
 ```sql
-CREATE EXTERNAL TABLE external_table (
+CREATE TRANSIENT TABLE transient_table (
     id INT,
-    name STRING
-)
-LOCATION = 's3://my_bucket/data/'
-FILE_FORMAT = (TYPE = 'CSV');
+    data STRING
+);
 ```
 
 ---
 
-## **Comparison Table**
+## **4. Clone Tables**
 
-| **Type**       | **Durability**   | **Use Case**                     | **Fail-Safe**  |
-|----------------|------------------|-----------------------------------|---------------|
-| **Permanent**  | Persistent       | Production and long-term storage | Yes           |
-| **Transient**  | Semi-persistent  | ETL staging                      | No            |
-| **Temporary**  | Session-specific | Ad-hoc transformations           | No            |
-| **External**   | External storage | Querying external data           | N/A           |
+### **Description**
+- Creates a **zero-copy clone** of an existing table.
+- Allows testing and experimentation on a snapshot without affecting the source table.
+
+### **Features**
+- Shares the same underlying storage until data diverges.
+- Supports Time Travel for the cloned table.
+
+### **Use Cases**
+- Testing schema or data changes.
+- Creating backups or working copies.
+
+### **Example**
+```sql
+CREATE TABLE cloned_table CLONE source_table;
+```
 
 ---
 
-## **Best Practices**
-1. Use **permanent tables** for critical production data.
-2. Use **transient tables** for staging and intermediate results.
-3. Use **temporary tables** for ad-hoc transformations and session-specific workflows.
-4. Use **external tables** to integrate Snowflake with external data lakes without ingestion.
+## **Comparison Between Table Types**
+
+| Feature                 | Permanent Table      | Temporary Table        | Transient Table       | Clone Table          |
+|-------------------------|----------------------|-------------------------|-----------------------|----------------------|
+| **Persistence**         | Persistent           | Session-only           | Persistent            | Based on source      |
+| **Time Travel**         | Supported            | Not Supported          | Limited               | Supported            |
+| **Fail-Safe**           | Supported            | Not Supported          | Not Supported         | Based on source      |
+| **Cost**                | Higher               | Low                    | Medium                | Based on source      |
+| **Use Case**            | Long-term storage    | Intermediate results   | Staging/temporary     | Testing/backups      |
 
 ---
 
-### **Summary**
-Understanding the types of tables in Snowflake enables efficient data management tailored to specific use cases. Choose the appropriate table type based on your requirements for durability, retention, and cost.
+## **Choosing the Right Table**
+
+When selecting a table type, consider the following:
+
+1. **Data Longevity**:
+   - Use **Permanent Tables** for critical data requiring long-term availability.
+   - Use **Transient Tables** for temporary data with reduced costs.
+
+2. **Operational Needs**:
+   - Use **Temporary Tables** for session-specific operations.
+   - Use **Clone Tables** to safely test changes without affecting the source.
+
+3. **Cost Efficiency**:
+   - If data recovery and fail-safe are not essential, opt for **Transient Tables**.
+
+4. **Testing and Experimentation**:
+   - Use **Clone Tables** to create quick snapshots for development or troubleshooting.
+
+---
+
+### **Additional Scenarios**
+
+#### **Scenario 1: Using Temporary Tables for ETL**
+- During an ETL process, store intermediate results in a **Temporary Table**.
+- Example:
+  ```sql
+  CREATE TEMPORARY TABLE etl_temp AS
+  SELECT * FROM source_table WHERE value > 100;
+  ```
+
+#### **Scenario 2: Reducing Storage Costs with Transient Tables**
+- Use **Transient Tables** for staging data that is not critical for recovery.
+- Example:
+  ```sql
+  CREATE TRANSIENT TABLE staging_data (
+      id INT,
+      info STRING
+  );
+  ```
+
+#### **Scenario 3: Cloning for Testing**
+- Clone a table to test schema changes without risking production data.
+- Example:
+  ```sql
+  CREATE TABLE test_table CLONE production_table;
+  ```
+
+---
+
