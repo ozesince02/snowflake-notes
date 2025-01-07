@@ -10,6 +10,7 @@
    - [Creating a Share](#creating-a-share)
    - [Granting Access](#granting-access)
    - [Consuming Shared Data](#consuming-shared-data)
+   - [Sharing with Non-Snowflake Users](#sharing-with-non-snowflake-users)
 7. [Advanced Topics](#advanced-topics)
    - [Reader Accounts](#reader-accounts)
    - [Dynamic Data Masking](#dynamic-data-masking)
@@ -93,6 +94,38 @@ Consumers can add the shared data to their environment:
 ```sql
 CREATE DATABASE shared_db FROM SHARE <provider_account>.<share_name>;
 ```
+
+### Sharing with Non-Snowflake Users
+
+For organizations or individuals who do not have their own Snowflake accounts, you can create user accounts within your Snowflake instance and assign them appropriate roles and permissions:
+
+1. **Create a New User Account:**
+   ```sql
+   CREATE USER non_snowflake_user
+   PASSWORD = 'SecurePassword123!'
+   DEFAULT_ROLE = 'PUBLIC'
+   DEFAULT_WAREHOUSE = 'my_warehouse';
+   ```
+
+2. **Grant Roles and Permissions:**
+   Assign roles to control the level of access:
+   ```sql
+   CREATE ROLE shared_data_role;
+   GRANT USAGE ON DATABASE my_database TO ROLE shared_data_role;
+   GRANT SELECT ON SCHEMA my_schema TO ROLE shared_data_role;
+   GRANT SELECT ON TABLE my_table TO ROLE shared_data_role;
+   GRANT ROLE shared_data_role TO USER non_snowflake_user;
+   ```
+
+3. **Provide Access Information:**
+   Share the login details and necessary Snowflake client tools (e.g., SnowSQL, web interface) with the user.
+
+4. **Monitor and Manage Access:**
+   Regularly audit and revoke permissions as needed:
+   ```sql
+   REVOKE ROLE shared_data_role FROM USER non_snowflake_user;
+   DROP USER non_snowflake_user;
+   ```
 
 ---
 
