@@ -11,6 +11,10 @@
    - [Granting Access](#granting-access)
    - [Consuming Shared Data](#consuming-shared-data)
    - [Sharing with Non-Snowflake Users](#sharing-with-non-snowflake-users)
+   - [Sharing a Database](#sharing-a-database)
+   - [Sharing a Schema](#sharing-a-schema)
+   - [Sharing a Secure View](#sharing-a-secure-view)
+   - [Sharing Data from Multiple Databases](#sharing-data-from-multiple-databases)
 7. [Advanced Topics](#advanced-topics)
    - [Reader Accounts](#reader-accounts)
    - [Dynamic Data Masking](#dynamic-data-masking)
@@ -125,6 +129,64 @@ For organizations or individuals who do not have their own Snowflake accounts, y
    ```sql
    REVOKE ROLE shared_data_role FROM USER non_snowflake_user;
    DROP USER non_snowflake_user;
+   ```
+
+### Sharing a Database
+
+To share an entire database:
+1. Grant usage and select privileges:
+   ```sql
+   GRANT USAGE ON DATABASE my_database TO SHARE my_share;
+   GRANT SELECT ON ALL TABLES IN SCHEMA my_database.my_schema TO SHARE my_share;
+   ```
+2. Add consumer accounts to the share as required:
+   ```sql
+   ALTER SHARE my_share ADD ACCOUNT = '<consumer_account_identifier>';
+   ```
+
+### Sharing a Schema
+
+To share a specific schema:
+1. Grant usage and select privileges:
+   ```sql
+   GRANT USAGE ON SCHEMA my_database.my_schema TO SHARE my_share;
+   GRANT SELECT ON ALL TABLES IN SCHEMA my_database.my_schema TO SHARE my_share;
+   ```
+2. Add consumer accounts to the share:
+   ```sql
+   ALTER SHARE my_share ADD ACCOUNT = '<consumer_account_identifier>';
+   ```
+
+### Sharing a Secure View
+
+Secure views prevent consumers from seeing the underlying logic or sensitive columns:
+1. Create a secure view:
+   ```sql
+   CREATE SECURE VIEW my_database.my_schema.secure_view AS
+   SELECT column1, column2 FROM my_table;
+   ```
+2. Share the secure view:
+   ```sql
+   GRANT SELECT ON VIEW my_database.my_schema.secure_view TO SHARE my_share;
+   ```
+3. Add consumers to the share:
+   ```sql
+   ALTER SHARE my_share ADD ACCOUNT = '<consumer_account_identifier>';
+   ```
+
+### Sharing Data from Multiple Databases
+
+To share data from multiple databases:
+1. Grant usage and select privileges for each database:
+   ```sql
+   GRANT USAGE ON DATABASE database1 TO SHARE my_share;
+   GRANT USAGE ON DATABASE database2 TO SHARE my_share;
+   GRANT SELECT ON ALL TABLES IN SCHEMA database1.schema1 TO SHARE my_share;
+   GRANT SELECT ON ALL TABLES IN SCHEMA database2.schema2 TO SHARE my_share;
+   ```
+2. Add the consumer accounts to the share:
+   ```sql
+   ALTER SHARE my_share ADD ACCOUNT = '<consumer_account_identifier>';
    ```
 
 ---
