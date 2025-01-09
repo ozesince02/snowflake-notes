@@ -153,3 +153,68 @@ WHEN MATCHED AND s.METADATA$ACTION
    Streams rely on the data retention period of the source table to remain valid. While this is not a configurable parameter of the stream itself, ensuring sufficient retention in the source table is critical to avoid staleness.
 
 By appropriately configuring these parameters, you can tailor the behavior of streams to match your data pipeline requirements.
+
+## Practical Examples and Use Cases
+
+### Example 1: Tracking Changes in a Table
+
+Create a stream to track all changes in a table and process them:
+
+```sql
+CREATE OR REPLACE STREAM my_stream ON TABLE my_table;
+
+-- Query changes in the stream
+SELECT * FROM my_stream;
+
+-- Process changes using a MERGE statement
+MERGE INTO target_table t
+USING my_stream s
+ON t.id = s.id
+WHEN MATCHED THEN
+  UPDATE SET t.col1 = s.col1
+WHEN NOT MATCHED THEN
+  INSERT (id, col1) VALUES (s.id, s.col1);
+```
+
+### Example 2: Using Append-Only Streams
+
+Use an append-only stream to capture only new inserts to a table:
+
+```sql
+CREATE OR REPLACE STREAM append_stream ON TABLE my_table APPEND_ONLY = TRUE;
+
+-- Query new inserts
+SELECT * FROM append_stream;
+```
+
+### Example 3: Automating Data Processing with Streams and Tasks
+
+Combine streams with tasks to automate processing:
+
+```sql
+CREATE OR REPLACE TASK hourly_task
+WAREHOUSE = 'COMPUTE_WH'
+SCHEDULE = '1 HOUR'
+AS
+MERGE INTO target_table t
+USING append_stream s
+ON t.id = s.id
+WHEN MATCHED THEN
+  UPDATE SET t.col1 = s.col1
+WHEN NOT MATCHED THEN
+  INSERT (id, col1) VALUES (s.id, s.col1);
+```
+
+## Best Practices
+
+1. **Monitor Stream Staleness:** Regularly check the `STALE_AFTER` timestamp to ensure your stream does not become stale.
+2. **Use Append-Only Streams When Appropriate:** Use append-only streams for scenarios where only new data matters, reducing overhead.
+3. **Automate Processing with Tasks:** Schedule tasks to consume streams and process changes at regular intervals.
+4. **Optimize Retention Periods:** Ensure source tables have sufficient data retention periods to prevent stream staleness.
+5. **Leverage Metadata Columns:** Use metadata columns like `METADATA$ACTION` and `METADATA$ROW_ID` to handle different types of changes efficiently.
+6. **Test Configurations:** Validate stream configurations in a development environment before deploying to production.
+
+## Conclusion
+
+Snowflake Streams are a powerful feature for Change Data Capture, enabling efficient and reliable tracking of data changes in your tables. By understanding their configurations, consuming them effectively, and integrating them with tasks, you can build robust data pipelines tailored to your organization's needs. Implement best practices to ensure optimal performance and reliability in your workflows.
+
