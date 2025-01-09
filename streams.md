@@ -15,12 +15,13 @@ Snowflake Streams provide a robust mechanism for Change Data Capture (CDC), enab
    - [Insert-Only Streams](#insert-only-streams)
 5. [Consuming Stream Data](#consuming-stream-data)
 6. [Combining Streams and Tasks](#combining-streams-and-tasks)
-7. [Practical Examples and Use Cases](#practical-examples-and-use-cases)
+7. [Parameters for Configuring Streams](#parameters-for-configuring-streams)
+8. [Practical Examples and Use Cases](#practical-examples-and-use-cases)
    - [Example 1: Tracking Changes in a Table](#example-1-tracking-changes-in-a-table)
    - [Example 2: Using Append-Only Streams](#example-2-using-append-only-streams)
    - [Example 3: Automating Data Processing with Streams and Tasks](#example-3-automating-data-processing-with-streams-and-tasks)
-8. [Best Practices](#best-practices)
-9. [Conclusion](#conclusion)
+9. [Best Practices](#best-practices)
+10. [Conclusion](#conclusion)
 
 ## Understanding Snowflake Streams
 
@@ -111,3 +112,44 @@ ON t.id = s.id
 WHEN MATCHED AND s.METADATA$ACTION = 'DELETE' THEN
   DELETE
 WHEN MATCHED AND s.METADATA$ACTION 
+```
+
+## Parameters for Configuring Streams
+
+1. **`ON` Clause**  
+   Specifies the source table or view for which the stream is created.  
+   - Example: `ON TABLE my_table`
+
+2. **`APPEND_ONLY`**  
+   A boolean parameter that, when set to `TRUE`, configures the stream to capture only inserted rows and ignore updates or deletes.  
+   - Default: `FALSE`  
+   - Example: `APPEND_ONLY = TRUE`
+
+3. **`INSERT_ONLY`**  
+   A boolean parameter used for external tables, indicating that the stream will track only insert operations.  
+   - Default: `FALSE`  
+   - Example: `INSERT_ONLY = TRUE`
+
+4. **`SHOW_INITIAL_ROWS`**  
+   When set to `TRUE`, the stream captures the existing rows in the source object at the time of creation as if they were newly inserted rows.  
+   - Default: `FALSE`  
+   - Example: `SHOW_INITIAL_ROWS = TRUE`
+
+5. **`NAME`**  
+   Specifies the name of the stream. It must be unique within the schema.  
+   - Example: `CREATE OR REPLACE STREAM my_stream`
+
+6. **`ON EXTERNAL TABLE`**  
+   Specifies the stream is being created on an external table, useful for ingesting external data changes.  
+   - Example: `ON EXTERNAL TABLE my_external_table`
+
+7. **`METADATA$` Columns**  
+   Streams automatically include metadata columns such as:  
+   - `METADATA$ACTION`: Specifies the type of change (`INSERT`, `UPDATE`, or `DELETE`).
+   - `METADATA$ISUPDATE`: Indicates whether the record represents an update.
+   - `METADATA$ROW_ID`: Unique identifier for each row change.
+
+8. **Retention Period**  
+   Streams rely on the data retention period of the source table to remain valid. While this is not a configurable parameter of the stream itself, ensuring sufficient retention in the source table is critical to avoid staleness.
+
+By appropriately configuring these parameters, you can tailor the behavior of streams to match your data pipeline requirements.
