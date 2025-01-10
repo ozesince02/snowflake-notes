@@ -9,6 +9,7 @@
 6. **Use Cases**
 7. **Limitations**
 8. **Industry/Best Practices**
+9. **End-to-End Example**
 
 ---
 
@@ -150,5 +151,75 @@ WHERE status = 'active';
 
 ---
 
-By following the guidelines and examples in this document, data engineers can effectively leverage materialized views in Snowflake to optimize query performance while managing costs and limitations.
+## 9. End-to-End Example
+
+### Hypothetical Project: Retail Analytics Dashboard
+
+#### Objective:
+Optimize the performance of a retail analytics dashboard that displays aggregated sales and inventory data across regions and products.
+
+#### Step 1: Define Base Tables
+Assume the base tables `sales` and `inventory`:
+```sql
+CREATE OR REPLACE TABLE sales (
+    sale_id INT,
+    region STRING,
+    product STRING,
+    sales_amount FLOAT,
+    sale_date DATE
+);
+
+CREATE OR REPLACE TABLE inventory (
+    product STRING,
+    region STRING,
+    stock_level INT,
+    last_updated DATE
+);
+```
+
+#### Step 2: Create Materialized Views
+1. **Aggregated Sales Data**:
+   ```sql
+   CREATE MATERIALIZED VIEW sales_summary AS
+   SELECT region, product, SUM(sales_amount) AS total_sales, COUNT(sale_id) AS total_transactions
+   FROM sales
+   WHERE sale_date >= CURRENT_DATE - INTERVAL '30 DAYS'
+   GROUP BY region, product;
+   ```
+
+2. **Active Inventory Levels**:
+   ```sql
+   CREATE MATERIALIZED VIEW inventory_summary AS
+   SELECT region, product, SUM(stock_level) AS total_stock
+   FROM inventory
+   WHERE last_updated >= CURRENT_DATE - INTERVAL '7 DAYS'
+   GROUP BY region, product;
+   ```
+
+#### Step 3: Query Materialized Views for Dashboard
+The dashboard queries pre-aggregated data:
+```sql
+SELECT *
+FROM sales_summary
+WHERE region = 'North America';
+
+SELECT *
+FROM inventory_summary
+WHERE product = 'Laptop';
+```
+
+#### Step 4: Monitor Refresh and Costs
+Monitor materialized views for performance and refresh metrics:
+```sql
+SELECT * FROM TABLE(SYSTEM$GET_MATERIALIZED_VIEW_REFRESH_HISTORY('sales_summary'));
+SELECT * FROM TABLE(SYSTEM$GET_MATERIALIZED_VIEW_REFRESH_HISTORY('inventory_summary'));
+```
+
+#### Step 5: Review and Optimize
+- Adjust materialized view queries based on usage patterns.
+- Drop unused materialized views to save costs.
+
+---
+
+By following these steps, the retail analytics project leverages materialized views to enhance dashboard performance while maintaining a balance between cost and efficiency.
 
