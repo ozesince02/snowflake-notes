@@ -1,4 +1,4 @@
-### Detailed Theory on Custom Roles in Snowflake
+### Custom Roles in Snowflake
 
 Snowflake’s **Role-Based Access Control (RBAC)** model uses roles to define and enforce access privileges. While Snowflake provides predefined roles (e.g., `ACCOUNTADMIN`, `SECURITYADMIN`, `SYSADMIN`), **custom roles** allow organizations to tailor access control policies to their specific needs, providing fine-grained security and operational efficiency.
 
